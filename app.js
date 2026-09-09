@@ -1,17 +1,22 @@
-// Firebase ക്രമീകരണങ്ങൾ ഇവിടെ നൽകുക (Firebase Console-ൽ നിന്ന് ലഭിക്കുന്നത്)
+// Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+// Your web app's Firebase configuration
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyD72SGtuhb1W2-HrpfdYwYs2vHaJvyFuOI",
+    authDomain: "school-fest-83254.firebaseapp.com",
+    projectId: "school-fest-83254",
+    storageBucket: "school-fest-83254.firebasestorage.app",
+    messagingSenderId: "80618522937",
+    appId: "1:80618522937:web:5faa7a6e01d05af39380e8",
+    measurementId: "G-L5SEDK6KB2"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 const db = getFirestore(app);
 
 // 1. അഡ്മിൻ ലോഗിൻ പരിശോധന
