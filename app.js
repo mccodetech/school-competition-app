@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, setDoc, getDoc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyD72SGtuhb1W2-HrpfdYwYs2vHaJvyFuOI",
@@ -19,21 +19,23 @@ const db = getFirestore(app);
 let currentInstituteId = null;
 let isSignUpMode = false;
 
-// വിൻഡോ ഒബ്ജക്റ്റിലേക്ക് ഫങ്ഷനുകൾ കൃത്യമായി നൽകുക
 window.toggleAuthMode = function() {
     isSignUpMode = !isSignUpMode;
     const title = document.getElementById('auth-title');
     const btn = document.getElementById('auth-btn');
     const toggleBtn = document.getElementById('toggle-auth-btn');
+    const signupFields = document.getElementById('signup-fields');
 
     if (isSignUpMode) {
         title.innerText = "സ്ഥാപന രജിസ്ട്രേഷൻ (Sign Up)";
         btn.innerText = "അക്കൗണ്ട് ഉണ്ടാക്കുക";
         toggleBtn.innerText = "이미 അക്കൗണ്ട് ഉണ്ടോ? ലോഗിൻ ചെയ്യുക";
+        signupFields.style.display = 'block';
     } else {
         title.innerText = "സ്ഥാപന ലോഗിൻ";
         btn.innerText = "ലോഗിൻ ചെയ്യുക";
         toggleBtn.innerText = "അക്കൗണ്ട് ഇല്ലെങ്കിൽ പുതിയത് ഉണ്ടാക്കുക (Sign Up)";
+        signupFields.style.display = 'none';
     }
 }
 
@@ -48,7 +50,26 @@ window.handleLogin = async function() {
 
     try {
         if (isSignUpMode) {
-            await createUserWithEmailAndPassword(auth, email, pass);
+            const name = document.getElementById('inst-name').value;
+            const location = document.getElementById('inst-location').value;
+            const affiliation = document.getElementById('inst-affiliation').value;
+
+            if (!name || !location || !affiliation) {
+                alert("എല്ലാ വിവരങ്ങളും പൂരിപ്പിക്കുക!");
+                return;
+            }
+
+            const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+            const user = userCredential.user;
+
+            // സ്ഥാപനത്തിന്റെ വിവരങ്ങൾ Firestore-ൽ സേവ് ചെയ്യുന്നു
+            await setDoc(doc(db, "institutes", user.uid), {
+                name: name,
+                location: location,
+                affiliation: affiliation,
+                email: email
+            });
+
             alert("സ്ഥാപന അക്കൗണ്ട് വിജയകരമായി നിർമ്മിക്കപ്പെട്ടു!");
         } else {
             await signInWithEmailAndPassword(auth, email, pass);
@@ -62,12 +83,12 @@ window.handleLogout = async function() {
     await signOut(auth);
 }
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentInstituteId = user.uid;
-        document.getElementById('institution-email-display').innerText = user.email;
         document.getElementById('auth-section').style.display = 'none';
         document.getElementById('dashboard-section').style.display = 'block';
+        await loadInstituteProfile();
         loadCompetitions();
         loadStudentsDropdown();
     } else {
@@ -76,6 +97,53 @@ onAuthStateChanged(auth, (user) => {
         document.getElementById('dashboard-section').style.display = 'none';
     }
 });
+
+async function loadInstituteProfile() {
+    const docRef = doc(db, "institutes", currentInstituteId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        const data = docSnap.data();
+        document.getElementById('display-name').innerText = data.name || '';
+        document.getElementById('display-location').innerText = data.location || '';
+        document.getElementById('display-affiliation').innerText = data.affiliation || '';
+    }
+}
+
+window.openEditProfile = async function() {
+    const docRef = doc(db, "institutes", currentInstituteId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        const data = docSnap.data();
+        document.getElementById('edit-name').value = data.name || '';
+        document.getElementById('edit-location').value = data.location || '';
+        document.getElementById('edit-affiliation').value = data.affiliation || '';
+    }
+    document.getElementById('edit-profile-section').style.display = 'block';
+}
+
+window.cancelEditProfile = function() {
+    document.getElementById('edit-profile-section').style.display = 'none';
+}
+
+window.saveProfile = async function() {
+    const name = document.getElementById('edit-name').value;
+    const location = document.getElementById('edit-location').value;
+    const affiliation = document.getElementById('edit-affiliation').value;
+
+    try {
+        const docRef = doc(db, "institutes", currentInstituteId);
+        await updateDoc(docRef, {
+            name: name,
+            location: location,
+            affiliation: affiliation
+        });
+        alert("പ്രൊഫൈൽ അപ്‌ഡേറ്റ് ചെയ്തു!");
+        document.getElementById('edit-profile-section').style.display = 'none';
+        loadInstituteProfile();
+    } catch (e) {
+        alert("എറർ: " + e.message);
+    }
+}
 
 window.uploadExcel = function() {
     const fileInput = document.getElementById('excelFile');
