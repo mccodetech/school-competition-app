@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>വെബ് ആപ്ലിക്കേഷൻ</title>
+    <!-- Bootstrap CSS for styling -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- SheetJS for Excel processing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body class="bg-light">
+
+    <!-- അഡ്മിൻ ലോഗിൻ സെക്ഷൻ -->
+    <div id="login-section" class="container mt-5" style="max-width: 400px;">
+        <div class="card shadow p-4">
+            <h3 class="text-center mb-3">അഡ്മിൻ ലോഗിൻ</h3>
+            <div class="mb-3">
+                <label class="form-label">യൂസർനെയിം</label>
+                <input type="text" id="username" class="form-control" placeholder="admin">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">പാസ്‌വേർഡ്</label>
+                <input type="password" id="password" class="form-control" placeholder="admin123">
+            </div>
+            <button onclick="adminLogin()" class="btn btn-primary w-100">ലോഗിൻ ചെയ്യുക</button>
+        </div>
+    </div>
+
+    <!-- അഡ്മിൻ ഡാഷ്‌ബോർഡ് (ലോഗിൻ ചെയ്തതിനു ശേഷം കാണുന്നത്) -->
+    <div id="dashboard-section" class="container mt-4" style="display: none;">
+        <h2 class="mb-4">അഡ്മിൻ പാനൽ</h2>
+        <button onclick="adminLogout()" class="btn btn-danger mb-3">ലോഗ് ഔട്ട്</button>
+
+        <!-- 1. എക്സൽ വഴി വിദ്യാർത്ഥികളുടെ വിവരങ്ങൾ അപ്‌ലോഡ് ചെയ്യാൻ -->
+        <div class="card p-3 mb-4 shadow-sm">
+            <h4>വിദ്യാർത്ഥികളുടെ വിവരങ്ങൾ അപ്‌ലോഡ് ചെയ്യുക (Excel)</h4>
+            <p class="text-muted small">പേര് (Name), യു.ഐ.ഡി (UID), ക്ലാസ് (Class) എന്നീ കോളങ്ങൾ ഉള്ള എക്സൽ ഫയൽ നൽകുക.</p>
+            <input type="file" id="excelFile" class="form-control mb-2" accept=".xlsx, .xls">
+            <button onclick="uploadExcel()" class="btn btn-success">അപ്‌ലോഡ് ചെയ്യുക</button>
+        </div>
+
+        <!-- 2. മത്സര ഇനങ്ങൾ ആഡ് ചെയ്യാൻ -->
+        <div class="card p-3 mb-4 shadow-sm">
+            <h4>മത്സര ഇനങ്ങൾ ചേർക്കുക</h4>
+            <div class="input-group mb-2">
+                <input type="text" id="competitionName" class="form-control" placeholder="മത്സരത്തിന്റെ പേര് (ഉദാ: പ്രസംഗം)">
+                <button onclick="addCompetition()" class="btn btn-primary">ചേർക്കുക</button>
+            </div>
+            <ul id="competitionList" class="list-group mt-2"></ul>
+        </div>
+
+        <!-- 3. മത്സരങ്ങളിൽ പങ്കെടുക്കുന്നവരെ തിരഞ്ഞെടുക്കാൻ -->
+        <div class="card p-3 mb-4 shadow-sm">
+            <h4>മത്സരാർത്ഥികളെ പങ്കെടുപ്പിക്കുക & മാർക്ക് നൽകുക</h4>
+            <div class="mb-3">
+                <label class="form-label">മത്സരം തിരഞ്ഞെടുക്കുക</label>
+                <select id="selectCompetition" class="form-select" onchange="loadParticipants()"></select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">വിദ്യാർത്ഥിയെ തിരഞ്ഞെടുക്കുക (UID - Name - Class)</label>
+                <select id="selectStudent" class="form-select"></select>
+            </div>
+            <button onclick="registerParticipant()" class="btn btn-info text-white mb-3">മത്സരത്തിലേക്ക് ചേർക്കുക</button>
+            
+            <hr>
+            <h5>മാർക്ക് എൻട്രി</h5>
+            <div id="participantsListForMarks"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
