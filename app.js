@@ -18,6 +18,7 @@ const db = getFirestore(app);
 
 let currentInstituteId = null;
 let isSignUpMode = false;
+let allStudents = []; // എല്ലാ വിദ്യാർത്ഥികളുടെയും ലിസ്റ്റ് സേവ് ചെയ്തു വെക്കാൻ
 
 window.toggleAuthMode = function() {
     isSignUpMode = !isSignUpMode;
@@ -89,7 +90,7 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('dashboard-section').style.display = 'block';
         await loadInstituteProfile();
         loadCompetitions();
-        loadStudentsDropdown();
+        await fetchStudents();
     } else {
         currentInstituteId = null;
         document.getElementById('auth-section').style.display = 'block';
@@ -160,26 +161,75 @@ window.uploadExcel = function() {
 
         try {
             for (let row of rows) {
-                // എക്സലിലെ കോളങ്ങൾ ഏത് കേസിൽ വന്നാലും (Name/name, UID/uid, Class/class) എടുക്കാൻ വേണ്ടി:
-                const studentName = row['Name'] || row['name'] || row['NAME'] || '';
-                const studentUid = row['UID'] || row['uid'] || row['Uid'] || '';
+                const studentName = row['Name'] || row['name'] || row['NAME'] || row['Student Name'] || '';
+                const studentUid = row['UID'] || row['uid'] || row['Uid'] || row['ID'] || '';
                 const studentClass = row['Class'] || row['class'] || row['CLASS'] || '';
 
-                await addDoc(collection(db, "students"), {
-                    instituteId: currentInstituteId,
-                    name: studentName,
-                    uid: studentUid,
-                    class: studentClass
-                });
+                if (studentName) { // പേര് ഉണ്ടെങ്കിൽ മാത്രം സേവ് ചെയ്യുക
+                    await addDoc(collection(db, "students"), {
+                        instituteId: currentInstituteId,
+                        name: String(studentName).trim(),
+                        uid: String(studentUid).trim(),
+                        class: String(studentClass).trim()
+                    });
+                }
             }
             alert("Students uploaded successfully!");
-            loadStudentsDropdown();
+            await fetchStudents();
         } catch (error) {
             console.error("Error uploading: ", error);
             alert("Error uploading students.");
         }
     };
     reader.readAsArrayBuffer(fileInput.files[0]);
+}
+
+async function fetchStudents() {
+    const q = query(collection(db, "students"), where("instituteId", "==", currentInstituteId));
+    const querySnapshot = await getDocs(q);
+    allStudents = [];
+    
+    const classSet = new Set();
+    const classSelect = document.getElementById('filterClass');
+    classSelect.innerHTML = '<option value="">All Classes</option>';
+
+    querySnapshot.forEach((docSnap) => {
+        const student = { id: docSnap.id, ...docSnap.data() };
+        allStudents.push(student);
+        if (student.class) {
+            classSet.add(student.class);
+        }
+    });
+
+    // ക്ലാസ് ഫിൽട്ടർ ഡ്രോപ്പ്ഡൗൺ തയ്യാറാക്കൽ
+    classSet.forEach(cls => {
+        classSelect.innerHTML += `<option value="${cls}">${cls}</option>`;
+    });
+
+    renderStudentDropdown(allStudents);
+}
+
+function renderStudentDropdown(students) {
+    const selectStudent = document.getElementById('selectStudent');
+    selectStudent.innerHTML = '<option value="">Select Student</option>';
+    
+    students.forEach(student => {
+        selectStudent.innerHTML += `<option value="${student.id}">${student.uid} - ${student.name} (${student.class})</option>`;
+    });
+}
+
+// ക്ലാസ് ഫിൽട്ടർ ചെയ്യാനും സെർച്ച് ചെയ്യാനുമുള്ള ഫങ്ഷൻ
+window.filterStudents = function() {
+    const classFilter = document.getElementById('filterClass').value.toLowerCase();
+    const searchText = document.getElementById('searchStudent').value.toLowerCase();
+
+    const filtered = allStudents.filter(student => {
+        const matchesClass = classFilter === "" || student.class.toLowerCase() === classFilter;
+        const matchesSearch = student.name.toLowerCase().includes(searchText) || student.uid.toLowerCase().includes(searchText);
+        return matchesClass && matchesSearch;
+    });
+
+    renderStudentDropdown(filtered);
 }
 
 window.addCompetition = async function() {
@@ -214,18 +264,6 @@ async function loadCompetitions() {
     });
 }
 
-async function loadStudentsDropdown() {
-    const selectStudent = document.getElementById('selectStudent');
-    selectStudent.innerHTML = '<option value="">Select Student</option>';
-
-    const q = query(collection(db, "students"), where("instituteId", "==", currentInstituteId));
-    const querySnapshot = await getDocs(q);
-    querySnapshot.forEach((docSnap) => {
-        const student = docSnap.data();
-        selectStudent.innerHTML += `<option value="${docSnap.id}">${student.uid} - ${student.name} (${student.class})</option>`;
-    });
-}
-
 window.registerParticipant = async function() {
     const compId = document.getElementById('selectCompetition').value;
     const studentId = document.getElementById('selectStudent').value;
@@ -256,13 +294,12 @@ window.loadParticipants = async function() {
 
     if (!compId) return;
 
-    const studentsSnap = await getDocs(query(collection(db, "students"), where("instituteId", "==", currentInstituteId)));
     const studentsMap = {};
-    studentsSnap.forEach(d => studentsMap[d.id] = d.data());
+    allStudents.forEach(s => studentsMap[s.id] = s);
 
     const participantsSnap = await getDocs(query(collection(db, "participants"), where("instituteId", "==", currentInstituteId)));
     
-    let html = `<table class="table"><thead><tr><th>Name</th><th>UID</th><th>Mark</th><th>Action</th></tr></thead><tbody>`;
+    let html = `<table class="table"><thead><tr><th>Name</th><th>UID</th><th>Class</th><th>Mark</th><th>Action</th></tr></thead><tbody>`;
     
     participantsSnap.forEach((docSnap) => {
         const p = docSnap.data();
@@ -271,6 +308,7 @@ window.loadParticipants = async function() {
             html += `<tr>
                 <td>${student.name || 'N/A'}</td>
                 <td>${student.uid || 'N/A'}</td>
+                <td>${student.class || 'N/A'}</td>
                 <td><input type="number" id="mark_${docSnap.id}" value="${p.mark}" class="form-control" style="width: 100px;"></td>
                 <td><button onclick="updateMark('${docSnap.id}')" class="btn btn-sm btn-success">Save</button></td>
             </tr>`;
