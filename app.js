@@ -1,9 +1,8 @@
-// Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Your web app's Firebase configuration
+// നിങ്ങളുടെ ഫയർബേസ് കോൺഫിഗറേഷൻ ഇവിടെ നൽകുക
 const firebaseConfig = {
     apiKey: "AIzaSyD72SGtuhb1W2-HrpfdYwYs2vHaJvyFuOI",
     authDomain: "school-fest-83254.firebaseapp.com",
@@ -14,32 +13,73 @@ const firebaseConfig = {
     measurementId: "G-L5SEDK6KB2"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+const auth = getAuth(app);
 const db = getFirestore(app);
 
-// 1. അഡ്മിൻ ലോഗിൻ പരിശോധന
-window.adminLogin = function() {
-    const user = document.getElementById('username').value;
-    const pass = document.getElementById('password').value;
+let currentInstituteId = null;
+let isSignUpMode = false;
 
-    if (user === "admin" && pass === "admin123") {
-        document.getElementById('login-section').style.display = 'none';
+// ലോഗിൻ മോഡ് മാറ്റാൻ (Login / Sign Up)
+window.toggleAuthMode = function() {
+    isSignUpMode = !isSignUpMode;
+    const title = document.getElementById('auth-title');
+    const btn = document.getElementById('auth-btn');
+    const toggleBtn = document.getElementById('toggle-auth-btn');
+
+    if (isSignUpMode) {
+        title.innerText = "സ്ഥാപന രജിസ്ട്രേഷൻ (Sign Up)";
+        btn.innerText = "അക്കൗണ്ട് ഉണ്ടാക്കുക";
+        toggleBtn.innerText = "이미 അക്കൗണ്ട് ഉണ്ടോ? ലോഗിൻ ചെയ്യുക";
+    } else {
+        title.innerText = "സ്ഥാപന ലോഗിൻ";
+        btn.innerText = "ലോഗിൻ ചെയ്യുക";
+        toggleBtn.innerText = "അക്കൗണ്ട് ഇല്ലെങ്കിൽ പുതിയത് ഉണ്ടാക്കുക (Sign Up)";
+    }
+}
+
+window.handleLogin = async function() {
+    const email = document.getElementById('auth-email').value;
+    const pass = document.getElementById('auth-password').value;
+
+    if (!email || !pass) {
+        alert("ദയവായി ഇമെയിലും പാസ്‌വേർഡും നൽകുക!");
+        return;
+    }
+
+    try {
+        if (isSignUpMode) {
+            await createUserWithEmailAndPassword(auth, email, pass);
+            alert("സ്ഥാപന അക്കൗണ്ട് വിജയകരമായി നിർമ്മിക്കപ്പെട്ടു!");
+        } else {
+            await signInWithEmailAndPassword(auth, email, pass);
+        }
+    } catch (error) {
+        alert("പിഴവ്: " + error.message);
+    }
+}
+
+window.handleLogout = async function() {
+    await signOut(auth);
+}
+
+// ഓതെന്റിക്കേഷൻ സ്റ്റേറ്റ് നിരീക്ഷിക്കാൻ
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        currentInstituteId = user.uid;
+        document.getElementById('institution-email-display').innerText = user.email;
+        document.getElementById('auth-section').style.display = 'none';
         document.getElementById('dashboard-section').style.display = 'block';
         loadCompetitions();
         loadStudentsDropdown();
     } else {
-        alert("തെറ്റായ യൂസർനെയിമോ പാസ്‌വേർഡോ ആണ്!");
+        currentInstituteId = null;
+        document.getElementById('auth-section').style.display = 'block';
+        document.getElementById('dashboard-section').style.display = 'none';
     }
-}
+});
 
-window.adminLogout = function() {
-    document.getElementById('login-section').style.display = 'block';
-    document.getElementById('dashboard-section').style.display = 'none';
-}
-
-// 2. എക്സൽ ഫയൽ വായിച്ച് ഫയർബേസിലേക്ക് സേവ് ചെയ്യൽ
+// എക്സൽ ഫയൽ വഴി വിദ്യാർത്ഥികളെ അപ്‌ലോഡ് ചെയ്യൽ (സ്ഥാപനത്തിന്റെ ഐഡി ചേർത്ത്)
 window.uploadExcel = function() {
     const fileInput = document.getElementById('excelFile');
     if (fileInput.files.length === 0) {
@@ -51,41 +91,42 @@ window.uploadExcel = function() {
     reader.onload = async function(e) {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, {type: 'array'});
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(sheet);
 
         try {
             for (let row of rows) {
-                // എക്സലിലെ കോളങ്ങൾ: Name, UID, Class എന്ന് കൃത്യമായിരിക്കണം
                 await addDoc(collection(db, "students"), {
+                    instituteId: currentInstituteId, // ഏത് സ്ഥാപനമാണെന്ന് തിരിച്ചറിയാൻ
                     name: row['Name'] || '',
                     uid: row['UID'] || '',
                     class: row['Class'] || ''
                 });
             }
-            alert("വിദ്യാർത്ഥികളുടെ വിവരങ്ങൾ വിജയകരമായി അപ്‌ലോഡ് ചെയ്തു!");
+            alert("വിദ്യാർത്ഥികളുടെ വിവരങ്ങൾ അപ്‌ലോഡ് ചെയ്തു!");
             loadStudentsDropdown();
         } catch (error) {
-            console.error("Error uploading: ", error);
-            alert("അപ്‌ലോഡ് ചെയ്യുന്നതിൽ തടസ്സം നേരിട്ടു.");
+            console.error("Error: ", error);
         }
     };
     reader.readAsArrayBuffer(fileInput.files[0]);
 }
 
-// 3. മത്സര ഇനങ്ങൾ ചേർക്കൽ
+// മത്സരങ്ങൾ ചേർക്കൽ
 window.addCompetition = async function() {
     const compName = document.getElementById('competitionName').value;
     if (!compName) return;
 
     try {
-        await addDoc(collection(db, "competitions"), { name: compName });
+        await addDoc(collection(db, "competitions"), {
+            instituteId: currentInstituteId,
+            name: compName
+        });
         document.getElementById('competitionName').value = '';
         loadCompetitions();
         alert("മത്സര ഇനം ചേർത്തു!");
     } catch (e) {
-        console.error("Error adding competition: ", e);
+        console.error("Error: ", e);
     }
 }
 
@@ -95,10 +136,11 @@ async function loadCompetitions() {
     listEl.innerHTML = '';
     selectEl.innerHTML = '<option value="">മത്സരം തിരഞ്ഞെടുക്കുക</option>';
 
-    const querySnapshot = await getDocs(collection(db, "competitions"));
+    const q = query(collection(db, "competitions"), where("instituteId", "==", currentInstituteId));
+    const querySnapshot = await getDocs(q);
     querySnapshot.forEach((docSnap) => {
         const comp = docSnap.data();
-        listEl.innerHTML += `<li class="list-group-item d-flex justify-content-between align-items-center">${comp.name}</li>`;
+        listEl.innerHTML += `<li class="list-group-item">${comp.name}</li>`;
         selectEl.innerHTML += `<option value="${docSnap.id}">${comp.name}</option>`;
     });
 }
@@ -107,14 +149,14 @@ async function loadStudentsDropdown() {
     const selectStudent = document.getElementById('selectStudent');
     selectStudent.innerHTML = '<option value="">വിദ്യാർത്ഥിയെ തിരഞ്ഞെടുക്കുക</option>';
 
-    const querySnapshot = await getDocs(collection(db, "students"));
+    const q = query(collection(db, "students"), where("instituteId", "==", currentInstituteId));
+    const querySnapshot = await getDocs(q);
     querySnapshot.forEach((docSnap) => {
         const student = docSnap.data();
         selectStudent.innerHTML += `<option value="${docSnap.id}">${student.uid} - ${student.name} (${student.class})</option>`;
     });
 }
 
-// 4. മത്സരത്തിലേക്ക് കുട്ടികളെ ചേർക്കൽ
 window.registerParticipant = async function() {
     const compId = document.getElementById('selectCompetition').value;
     const studentId = document.getElementById('selectStudent').value;
@@ -126,6 +168,7 @@ window.registerParticipant = async function() {
 
     try {
         await addDoc(collection(db, "participants"), {
+            instituteId: currentInstituteId,
             competitionId: compId,
             studentId: studentId,
             mark: 0
@@ -137,7 +180,6 @@ window.registerParticipant = async function() {
     }
 }
 
-// 5. മത്സരത്തിൽ പങ്കെടുക്കുന്നവരുടെ മാർക്ക് എന്റർ ചെയ്യൽ
 window.loadParticipants = async function() {
     const compId = document.getElementById('selectCompetition').value;
     const container = document.getElementById('participantsListForMarks');
@@ -145,12 +187,11 @@ window.loadParticipants = async function() {
 
     if (!compId) return;
 
-    // വിദ്യാർത്ഥികളുടെ വിവരങ്ങൾ മുൻകൂട്ടി എടുത്തു വെക്കാം
-    const studentsSnap = await getDocs(collection(db, "students"));
+    const studentsSnap = await getDocs(query(collection(db, "students"), where("instituteId", "==", currentInstituteId)));
     const studentsMap = {};
     studentsSnap.forEach(d => studentsMap[d.id] = d.data());
 
-    const participantsSnap = await getDocs(collection(db, "participants"));
+    const participantsSnap = await getDocs(query(collection(db, "participants"), where("instituteId", "==", currentInstituteId)));
     
     let html = `<table class="table"><thead><tr><th>പേര്</th><th>UID</th><th>മാർക്ക്</th><th>ആക്ഷൻ</th></tr></thead><tbody>`;
     
