@@ -1,116 +1,120 @@
 <!DOCTYPE html>
-<html lang="ml">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>സ്ഥാപനങ്ങളുടെ സ്കൂൾ ഫെസ്റ്റ് മാനേജർ</title>
+    <title>School Competition Manager</title>
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- SheetJS for Excel processing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body class="bg-light">
 
-    <!-- ലോഗിൻ / സൈൻ അപ്പ് സെക്ഷൻ -->
+    <!-- Login / Sign Up Section -->
     <div id="auth-section" class="container mt-5" style="max-width: 450px;">
         <div class="card shadow p-4">
-            <h3 id="auth-title" class="text-center mb-3">സ്ഥാപന ലോഗിൻ</h3>
+            <h3 id="auth-title" class="text-center mb-3">Institution Login</h3>
             
-            <!-- അധികമായി ചേർക്കേണ്ട ഫീൽഡുകൾ (സൈൻ അപ്പ് ചെയ്യുമ്പോൾ മാത്രം കാണിക്കുന്നത്) -->
+            <!-- Additional Fields (Only visible during Sign Up) -->
             <div id="signup-fields" style="display: none;">
                 <div class="mb-3">
-                    <label class="form-label">സ്ഥാപനത്തിന്റെ പേര്</label>
-                    <input type="text" id="inst-name" class="form-control" placeholder="ഉദാ: GHSS School">
+                    <label class="form-label">Institution Name</label>
+                    <input type="text" id="inst-name" class="form-control" placeholder="e.g. GHSS School">
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">സ്ഥലം (Location)</label>
-                    <input type="text" id="inst-location" class="form-control" placeholder="ഉദാ: കോഴിക്കോട്">
+                    <label class="form-label">Location</label>
+                    <input type="text" id="inst-location" class="form-control" placeholder="e.g. Kozhikode">
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">അഫിലിയേഷൻ നമ്പർ</label>
-                    <input type="text" id="inst-affiliation" class="form-control" placeholder="ഉദാ: 12345">
+                    <label class="form-label">Affiliation Number</label>
+                    <input type="text" id="inst-affiliation" class="form-control" placeholder="e.g. 12345">
                 </div>
             </div>
 
             <div class="mb-3">
-                <label class="form-label">ഇമെയിൽ</label>
+                <label class="form-label">Email Address</label>
                 <input type="email" id="auth-email" class="form-control" placeholder="example@school.com">
             </div>
             <div class="mb-3">
-                <label class="form-label">പാസ്‌വേർഡ്</label>
+                <label class="form-label">Password</label>
                 <input type="password" id="auth-password" class="form-control" placeholder="********">
             </div>
             
-            <button id="auth-btn" onclick="handleLogin()" class="btn btn-primary w-100 mb-2">ലോഗിൻ ചെയ്യുക</button>
-            <button id="toggle-auth-btn" onclick="toggleAuthMode()" class="btn btn-link w-100 text-decoration-none">അക്കൗണ്ട് ഇല്ലെങ്കിൽ പുതിയത് ഉണ്ടാക്കുക (Sign Up)</button>
+            <button id="auth-btn" onclick="handleLogin()" class="btn btn-primary w-100 mb-2">Login</button>
+            <button id="toggle-auth-btn" onclick="toggleAuthMode()" class="btn btn-link w-100 text-decoration-none">Don't have an account? Sign Up</button>
         </div>
     </div>
 
-    <!-- സ്ഥാപനത്തിന്റെ ഡാഷ്‌ബോർഡ് -->
+    <!-- Institution Dashboard -->
     <div id="dashboard-section" class="container mt-4" style="display: none;">
         <div class="card p-3 mb-4 shadow-sm bg-white">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h3>സ്ഥാപന അഡ്മിൻ പാനൽ</h3>
-                    <p class="mb-1"><strong>പേര്:</strong> <span id="display-name"></span></p>
-                    <p class="mb-1"><strong>സ്ഥലം:</strong> <span id="display-location"></span></p>
-                    <p class="mb-0"><strong>അഫിലിയേഷൻ നമ്പർ:</strong> <span id="display-affiliation"></span></p>
+                    <h3>Institution Admin Panel</h3>
+                    <p class="mb-1"><strong>Name:</strong> <span id="display-name"></span></p>
+                    <p class="mb-1"><strong>Location:</strong> <span id="display-location"></span></p>
+                    <p class="mb-0"><strong>Affiliation No:</strong> <span id="display-affiliation"></span></p>
                 </div>
                 <div>
-                    <button onclick="openEditProfile()" class="btn btn-warning btn-sm mb-1 w-100">എഡിറ്റ് ചെയ്യുക</button>
-                    <button onclick="handleLogout()" class="btn btn-danger btn-sm w-100">ലോഗ് ഔട്ട്</button>
+                    <button onclick="openEditProfile()" class="btn btn-warning btn-sm mb-1 w-100">Edit Profile</button>
+                    <button onclick="handleLogout()" class="btn btn-danger btn-sm w-100">Logout</button>
                 </div>
             </div>
 
-            <!-- പ്രൊഫൈൽ എഡിറ്റ് ചെയ്യുന്ന ഫോം (പെട്ടെന്ന് കാണാൻ കഴിയുന്ന രീതിയിൽ) -->
+            <!-- Edit Profile Section -->
             <div id="edit-profile-section" class="mt-3 border-top pt-3" style="display: none;">
-                <h5>സ്ഥാപന വിവരങ്ങൾ തിരുത്തുക</h5>
+                <h5>Edit Institution Details</h5>
                 <div class="row g-2">
-                    <div class="col-md-4"><input type="text" id="edit-name" class="form-control" placeholder="സ്ഥാപനത്തിന്റെ പേര്"></div>
-                    <div class="col-md-4"><input type="text" id="edit-location" class="form-control" placeholder="സ്ഥലം"></div>
-                    <div class="col-md-4"><input type="text" id="edit-affiliation" class="form-control" placeholder="അഫിലിയേഷൻ നമ്പർ"></div>
+                    <div class="col-md-4"><input type="text" id="edit-name" class="form-control" placeholder="Institution Name"></div>
+                    <div class="col-md-4"><input type="text" id="edit-location" class="form-control" placeholder="Location"></div>
+                    <div class="col-md-4"><input type="text" id="edit-affiliation" class="form-control" placeholder="Affiliation Number"></div>
                 </div>
                 <div class="mt-2">
-                    <button onclick="saveProfile()" class="btn btn-success btn-sm">സേവ് ചെയ്യുക</button>
-                    <button onclick="cancelEditProfile()" class="btn btn-secondary btn-sm">ക്യാൻസൽ</button>
+                    <button onclick="saveProfile()" class="btn btn-success btn-sm">Save Changes</button>
+                    <button onclick="cancelEditProfile()" class="btn btn-secondary btn-sm">Cancel</button>
                 </div>
             </div>
         </div>
 
-        <!-- 1. എക്സൽ വഴി വിദ്യാർത്ഥികളുടെ വിവരങ്ങൾ അപ്‌ലോഡ് ചെയ്യാൻ -->
+        <!-- 1. Upload Students via Excel -->
         <div class="card p-3 mb-4 shadow-sm">
-            <h4>വിദ്യാർത്ഥികളുടെ വിവരങ്ങൾ അപ്‌ലോഡ് ചെയ്യുക (Excel)</h4>
+            <h4>Upload Students (Excel)</h4>
+            <p class="text-muted small">Upload an Excel file containing columns: Name, UID, Class</p>
             <input type="file" id="excelFile" class="form-control mb-2" accept=".xlsx, .xls">
-            <button onclick="uploadExcel()" class="btn btn-success">അപ്‌ലോഡ് ചെയ്യുക</button>
+            <button onclick="uploadExcel()" class="btn btn-success">Upload Students</button>
         </div>
 
-        <!-- 2. മത്സര ഇനങ്ങൾ ചേർക്കൽ -->
+        <!-- 2. Add Competitions -->
         <div class="card p-3 mb-4 shadow-sm">
-            <h4>മത്സര ഇനങ്ങൾ ചേർക്കുക</h4>
+            <h4>Add Competitions</h4>
             <div class="input-group mb-2">
-                <input type="text" id="competitionName" class="form-control" placeholder="മത്സരത്തിന്റെ പേര്">
-                <button onclick="addCompetition()" class="btn btn-primary">ചേർക്കുക</button>
+                <input type="text" id="competitionName" class="form-control" placeholder="Competition Name (e.g. Speech)">
+                <button onclick="addCompetition()" class="btn btn-primary">Add Competition</button>
             </div>
             <ul id="competitionList" class="list-group mt-2"></ul>
         </div>
 
-        <!-- 3. മത്സരങ്ങളിൽ പങ്കെടുക്കുന്നവരെ തിരഞ്ഞെടുക്കാൻ -->
+        <!-- 3. Register Participants & Enter Marks -->
         <div class="card p-3 mb-4 shadow-sm">
-            <h4>മത്സരാർത്ഥികളെ പങ്കെടുപ്പിക്കുക & മാർക്ക് നൽകുക</h4>
+            <h4>Participants & Mark Entry</h4>
             <div class="mb-3">
-                <label class="form-label">മത്സരം തിരഞ്ഞെടുക്കുക</label>
+                <label class="form-label">Select Competition</label>
                 <select id="selectCompetition" class="form-select" onchange="loadParticipants()"></select>
             </div>
             <div class="mb-3">
-                <label class="form-label">വിദ്യാർത്ഥിയെ തിരഞ്ഞെടുക്കുക</label>
+                <label class="form-label">Select Student</label>
                 <select id="selectStudent" class="form-select"></select>
             </div>
-            <button onclick="registerParticipant()" class="btn btn-info text-white mb-3">മത്സരത്തിലേക്ക് ചേർക്കുക</button>
+            <button onclick="registerParticipant()" class="btn btn-info text-white mb-3">Add to Competition</button>
             
             <hr>
-            <h5>മാർക്ക് എൻട്രി</h5>
+            <h5>Mark Entry</h5>
             <div id="participantsListForMarks"></div>
         </div>
     </div>
 
+    <!-- Firebase SDKs & Main Script -->
     <script type="module" src="app.js"></script>
 </body>
 </html>
