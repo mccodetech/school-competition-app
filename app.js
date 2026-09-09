@@ -2,7 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// നിങ്ങളുടെ ഫയർബേസ് കോൺഫിഗറേഷൻ ഇവിടെ നൽകുക
 const firebaseConfig = {
     apiKey: "AIzaSyD72SGtuhb1W2-HrpfdYwYs2vHaJvyFuOI",
     authDomain: "school-fest-83254.firebaseapp.com",
@@ -20,7 +19,7 @@ const db = getFirestore(app);
 let currentInstituteId = null;
 let isSignUpMode = false;
 
-// ലോഗിൻ മോഡ് മാറ്റാൻ (Login / Sign Up)
+// വിൻഡോ ഒബ്ജക്റ്റിലേക്ക് ഫങ്ഷനുകൾ കൃത്യമായി നൽകുക
 window.toggleAuthMode = function() {
     isSignUpMode = !isSignUpMode;
     const title = document.getElementById('auth-title');
@@ -63,7 +62,6 @@ window.handleLogout = async function() {
     await signOut(auth);
 }
 
-// ഓതെന്റിക്കേഷൻ സ്റ്റേറ്റ് നിരീക്ഷിക്കാൻ
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentInstituteId = user.uid;
@@ -79,7 +77,6 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// എക്സൽ ഫയൽ വഴി വിദ്യാർത്ഥികളെ അപ്‌ലോഡ് ചെയ്യൽ (സ്ഥാപനത്തിന്റെ ഐഡി ചേർത്ത്)
 window.uploadExcel = function() {
     const fileInput = document.getElementById('excelFile');
     if (fileInput.files.length === 0) {
@@ -97,7 +94,7 @@ window.uploadExcel = function() {
         try {
             for (let row of rows) {
                 await addDoc(collection(db, "students"), {
-                    instituteId: currentInstituteId, // ഏത് സ്ഥാപനമാണെന്ന് തിരിച്ചറിയാൻ
+                    instituteId: currentInstituteId,
                     name: row['Name'] || '',
                     uid: row['UID'] || '',
                     class: row['Class'] || ''
@@ -112,7 +109,6 @@ window.uploadExcel = function() {
     reader.readAsArrayBuffer(fileInput.files[0]);
 }
 
-// മത്സരങ്ങൾ ചേർക്കൽ
 window.addCompetition = async function() {
     const compName = document.getElementById('competitionName').value;
     if (!compName) return;
