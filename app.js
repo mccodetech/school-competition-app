@@ -27,14 +27,14 @@ window.toggleAuthMode = function() {
     const signupFields = document.getElementById('signup-fields');
 
     if (isSignUpMode) {
-        title.innerText = "സ്ഥാപന രജിസ്ട്രേഷൻ (Sign Up)";
-        btn.innerText = "അക്കൗണ്ട് ഉണ്ടാക്കുക";
-        toggleBtn.innerText = "이미 അക്കൗണ്ട് ഉണ്ടോ? ലോഗിൻ ചെയ്യുക";
+        title.innerText = "Institution Registration (Sign Up)";
+        btn.innerText = "Create Account";
+        toggleBtn.innerText = "Already have an account? Login";
         signupFields.style.display = 'block';
     } else {
-        title.innerText = "സ്ഥാപന ലോഗിൻ";
-        btn.innerText = "ലോഗിൻ ചെയ്യുക";
-        toggleBtn.innerText = "അക്കൗണ്ട് ഇല്ലെങ്കിൽ പുതിയത് ഉണ്ടാക്കുക (Sign Up)";
+        title.innerText = "Institution Login";
+        btn.innerText = "Login";
+        toggleBtn.innerText = "Don't have an account? Sign Up";
         signupFields.style.display = 'none';
     }
 }
@@ -44,7 +44,7 @@ window.handleLogin = async function() {
     const pass = document.getElementById('auth-password').value;
 
     if (!email || !pass) {
-        alert("ദയവായി ഇമെയിലും പാസ്‌വേർഡും നൽകുക!");
+        alert("Please enter email and password!");
         return;
     }
 
@@ -55,14 +55,13 @@ window.handleLogin = async function() {
             const affiliation = document.getElementById('inst-affiliation').value;
 
             if (!name || !location || !affiliation) {
-                alert("എല്ലാ വിവരങ്ങളും പൂരിപ്പിക്കുക!");
+                alert("Please fill in all institution details!");
                 return;
             }
 
             const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
             const user = userCredential.user;
 
-            // സ്ഥാപനത്തിന്റെ വിവരങ്ങൾ Firestore-ൽ സേവ് ചെയ്യുന്നു
             await setDoc(doc(db, "institutes", user.uid), {
                 name: name,
                 location: location,
@@ -70,12 +69,12 @@ window.handleLogin = async function() {
                 email: email
             });
 
-            alert("സ്ഥാപന അക്കൗണ്ട് വിജയകരമായി നിർമ്മിക്കപ്പെട്ടു!");
+            alert("Institution account created successfully!");
         } else {
             await signInWithEmailAndPassword(auth, email, pass);
         }
     } catch (error) {
-        alert("പിഴവ്: " + error.message);
+        alert("Error: " + error.message);
     }
 }
 
@@ -137,18 +136,18 @@ window.saveProfile = async function() {
             location: location,
             affiliation: affiliation
         });
-        alert("പ്രൊഫൈൽ അപ്‌ഡേറ്റ് ചെയ്തു!");
+        alert("Profile updated successfully!");
         document.getElementById('edit-profile-section').style.display = 'none';
         loadInstituteProfile();
     } catch (e) {
-        alert("എറർ: " + e.message);
+        alert("Error: " + e.message);
     }
 }
 
 window.uploadExcel = function() {
     const fileInput = document.getElementById('excelFile');
     if (fileInput.files.length === 0) {
-        alert("ദയവായി ഒരു എക്സൽ ഫയൽ തിരഞ്ഞെടുക്കുക!");
+        alert("Please select an Excel file!");
         return;
     }
 
@@ -161,17 +160,23 @@ window.uploadExcel = function() {
 
         try {
             for (let row of rows) {
+                // എക്സലിലെ കോളങ്ങൾ ഏത് കേസിൽ വന്നാലും (Name/name, UID/uid, Class/class) എടുക്കാൻ വേണ്ടി:
+                const studentName = row['Name'] || row['name'] || row['NAME'] || '';
+                const studentUid = row['UID'] || row['uid'] || row['Uid'] || '';
+                const studentClass = row['Class'] || row['class'] || row['CLASS'] || '';
+
                 await addDoc(collection(db, "students"), {
                     instituteId: currentInstituteId,
-                    name: row['Name'] || '',
-                    uid: row['UID'] || '',
-                    class: row['Class'] || ''
+                    name: studentName,
+                    uid: studentUid,
+                    class: studentClass
                 });
             }
-            alert("വിദ്യാർത്ഥികളുടെ വിവരങ്ങൾ അപ്‌ലോഡ് ചെയ്തു!");
+            alert("Students uploaded successfully!");
             loadStudentsDropdown();
         } catch (error) {
-            console.error("Error: ", error);
+            console.error("Error uploading: ", error);
+            alert("Error uploading students.");
         }
     };
     reader.readAsArrayBuffer(fileInput.files[0]);
@@ -188,7 +193,7 @@ window.addCompetition = async function() {
         });
         document.getElementById('competitionName').value = '';
         loadCompetitions();
-        alert("മത്സര ഇനം ചേർത്തു!");
+        alert("Competition added successfully!");
     } catch (e) {
         console.error("Error: ", e);
     }
@@ -198,7 +203,7 @@ async function loadCompetitions() {
     const listEl = document.getElementById('competitionList');
     const selectEl = document.getElementById('selectCompetition');
     listEl.innerHTML = '';
-    selectEl.innerHTML = '<option value="">മത്സരം തിരഞ്ഞെടുക്കുക</option>';
+    selectEl.innerHTML = '<option value="">Select Competition</option>';
 
     const q = query(collection(db, "competitions"), where("instituteId", "==", currentInstituteId));
     const querySnapshot = await getDocs(q);
@@ -211,7 +216,7 @@ async function loadCompetitions() {
 
 async function loadStudentsDropdown() {
     const selectStudent = document.getElementById('selectStudent');
-    selectStudent.innerHTML = '<option value="">വിദ്യാർത്ഥിയെ തിരഞ്ഞെടുക്കുക</option>';
+    selectStudent.innerHTML = '<option value="">Select Student</option>';
 
     const q = query(collection(db, "students"), where("instituteId", "==", currentInstituteId));
     const querySnapshot = await getDocs(q);
@@ -226,7 +231,7 @@ window.registerParticipant = async function() {
     const studentId = document.getElementById('selectStudent').value;
 
     if (!compId || !studentId) {
-        alert("മത്സരവും വിദ്യാർത്ഥിയെയും തിരഞ്ഞെടുക്കുക!");
+        alert("Please select both competition and student!");
         return;
     }
 
@@ -237,7 +242,7 @@ window.registerParticipant = async function() {
             studentId: studentId,
             mark: 0
         });
-        alert("വിദ്യാർത്ഥിയെ മത്സരത്തിലേക്ക് ചേർത്തു!");
+        alert("Student added to competition successfully!");
         loadParticipants();
     } catch (e) {
         console.error("Error: ", e);
@@ -257,7 +262,7 @@ window.loadParticipants = async function() {
 
     const participantsSnap = await getDocs(query(collection(db, "participants"), where("instituteId", "==", currentInstituteId)));
     
-    let html = `<table class="table"><thead><tr><th>പേര്</th><th>UID</th><th>മാർക്ക്</th><th>ആക്ഷൻ</th></tr></thead><tbody>`;
+    let html = `<table class="table"><thead><tr><th>Name</th><th>UID</th><th>Mark</th><th>Action</th></tr></thead><tbody>`;
     
     participantsSnap.forEach((docSnap) => {
         const p = docSnap.data();
@@ -267,7 +272,7 @@ window.loadParticipants = async function() {
                 <td>${student.name || 'N/A'}</td>
                 <td>${student.uid || 'N/A'}</td>
                 <td><input type="number" id="mark_${docSnap.id}" value="${p.mark}" class="form-control" style="width: 100px;"></td>
-                <td><button onclick="updateMark('${docSnap.id}')" class="btn btn-sm btn-success">സേവ് ചെയ്യുക</button></td>
+                <td><button onclick="updateMark('${docSnap.id}')" class="btn btn-sm btn-success">Save</button></td>
             </tr>`;
         }
     });
@@ -280,7 +285,7 @@ window.updateMark = async function(participantId) {
     try {
         const docRef = doc(db, "participants", participantId);
         await updateDoc(docRef, { mark: Number(mark) });
-        alert("മാർക്ക് അപ്‌ഡേറ്റ് ചെയ്തു!");
+        alert("Mark updated successfully!");
     } catch (e) {
         console.error("Error updating mark: ", e);
     }
