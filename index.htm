@@ -102,6 +102,21 @@
                 <label class="form-label">Select Competition</label>
                 <select id="selectCompetition" class="form-select" onchange="loadParticipants()"></select>
             </div>
+
+            <!-- Filter and Search Students -->
+            <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                    <label class="form-label">Filter by Class</label>
+                    <select id="filterClass" class="form-select" onchange="filterStudents()">
+                        <option value="">All Classes</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Search Student (Name / UID)</label>
+                    <input type="text" id="searchStudent" class="form-control" placeholder="Type name or UID..." onkeyup="filterStudents()">
+                </div>
+            </div>
+
             <div class="mb-3">
                 <label class="form-label">Select Student</label>
                 <select id="selectStudent" class="form-select"></select>
