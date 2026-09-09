@@ -13,30 +13,71 @@
     <div id="auth-section" class="container mt-5" style="max-width: 450px;">
         <div class="card shadow p-4">
             <h3 id="auth-title" class="text-center mb-3">സ്ഥാപന ലോഗിൻ</h3>
+            
+            <!-- അധികമായി ചേർക്കേണ്ട ഫീൽഡുകൾ (സൈൻ അപ്പ് ചെയ്യുമ്പോൾ മാത്രം കാണിക്കുന്നത്) -->
+            <div id="signup-fields" style="display: none;">
+                <div class="mb-3">
+                    <label class="form-label">സ്ഥാപനത്തിന്റെ പേര്</label>
+                    <input type="text" id="inst-name" class="form-control" placeholder="ഉദാ: GHSS School">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">സ്ഥലം (Location)</label>
+                    <input type="text" id="inst-location" class="form-control" placeholder="ഉദാ: കോഴിക്കോട്">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">അഫിലിയേഷൻ നമ്പർ</label>
+                    <input type="text" id="inst-affiliation" class="form-control" placeholder="ഉദാ: 12345">
+                </div>
+            </div>
+
             <div class="mb-3">
-                <label class="form-label">സ്ഥാപനത്തിന്റെ ഇമെയിൽ</label>
+                <label class="form-label">ഇമെയിൽ</label>
                 <input type="email" id="auth-email" class="form-control" placeholder="example@school.com">
             </div>
             <div class="mb-3">
                 <label class="form-label">പാസ്‌വേർഡ്</label>
                 <input type="password" id="auth-password" class="form-control" placeholder="********">
             </div>
+            
             <button id="auth-btn" onclick="handleLogin()" class="btn btn-primary w-100 mb-2">ലോഗിൻ ചെയ്യുക</button>
             <button id="toggle-auth-btn" onclick="toggleAuthMode()" class="btn btn-link w-100 text-decoration-none">അക്കൗണ്ട് ഇല്ലെങ്കിൽ പുതിയത് ഉണ്ടാക്കുക (Sign Up)</button>
         </div>
     </div>
 
-    <!-- സ്ഥാപനത്തിന്റെ ഡാഷ്‌ബോർഡ് (ലോഗിൻ ചെയ്തതിനു ശേഷം കാണുന്നത്) -->
+    <!-- സ്ഥാപനത്തിന്റെ ഡാഷ്‌ബോർഡ് -->
     <div id="dashboard-section" class="container mt-4" style="display: none;">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>സ്ഥാപന അഡ്മിൻ പാനൽ: <span id="institution-email-display" class="text-primary fs-5"></span></h2>
-            <button onclick="handleLogout()" class="btn btn-danger">ലോഗ് ഔട്ട്</button>
+        <div class="card p-3 mb-4 shadow-sm bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3>സ്ഥാപന അഡ്മിൻ പാനൽ</h3>
+                    <p class="mb-1"><strong>പേര്:</strong> <span id="display-name"></span></p>
+                    <p class="mb-1"><strong>സ്ഥലം:</strong> <span id="display-location"></span></p>
+                    <p class="mb-0"><strong>അഫിലിയേഷൻ നമ്പർ:</strong> <span id="display-affiliation"></span></p>
+                </div>
+                <div>
+                    <button onclick="openEditProfile()" class="btn btn-warning btn-sm mb-1 w-100">എഡിറ്റ് ചെയ്യുക</button>
+                    <button onclick="handleLogout()" class="btn btn-danger btn-sm w-100">ലോഗ് ഔട്ട്</button>
+                </div>
+            </div>
+
+            <!-- പ്രൊഫൈൽ എഡിറ്റ് ചെയ്യുന്ന ഫോം (പെട്ടെന്ന് കാണാൻ കഴിയുന്ന രീതിയിൽ) -->
+            <div id="edit-profile-section" class="mt-3 border-top pt-3" style="display: none;">
+                <h5>സ്ഥാപന വിവരങ്ങൾ തിരുത്തുക</h5>
+                <div class="row g-2">
+                    <div class="col-md-4"><input type="text" id="edit-name" class="form-control" placeholder="സ്ഥാപനത്തിന്റെ പേര്"></div>
+                    <div class="col-md-4"><input type="text" id="edit-location" class="form-control" placeholder="സ്ഥലം"></div>
+                    <div class="col-md-4"><input type="text" id="edit-affiliation" class="form-control" placeholder="അഫിലിയേഷൻ നമ്പർ"></div>
+                </div>
+                <div class="mt-2">
+                    <button onclick="saveProfile()" class="btn btn-success btn-sm">സേവ് ചെയ്യുക</button>
+                    <button onclick="cancelEditProfile()" class="btn btn-secondary btn-sm">ക്യാൻസൽ</button>
+                </div>
+            </div>
         </div>
 
         <!-- 1. എക്സൽ വഴി വിദ്യാർത്ഥികളുടെ വിവരങ്ങൾ അപ്‌ലോഡ് ചെയ്യാൻ -->
         <div class="card p-3 mb-4 shadow-sm">
             <h4>വിദ്യാർത്ഥികളുടെ വിവരങ്ങൾ അപ്‌ലോഡ് ചെയ്യുക (Excel)</h4>
-            <p class="text-muted small">പേര് (Name), യു.ഐ.ഡി (UID), ക്ലാസ് (Class) എന്നീ കോളങ്ങൾ ഉള്ള എക്സൽ ഫയൽ നൽകുക.</p>
             <input type="file" id="excelFile" class="form-control mb-2" accept=".xlsx, .xls">
             <button onclick="uploadExcel()" class="btn btn-success">അപ്‌ലോഡ് ചെയ്യുക</button>
         </div>
@@ -45,7 +86,7 @@
         <div class="card p-3 mb-4 shadow-sm">
             <h4>മത്സര ഇനങ്ങൾ ചേർക്കുക</h4>
             <div class="input-group mb-2">
-                <input type="text" id="competitionName" class="form-control" placeholder="മത്സരത്തിന്റെ പേര് (ഉദാ: പ്രസംഗം)">
+                <input type="text" id="competitionName" class="form-control" placeholder="മത്സരത്തിന്റെ പേര്">
                 <button onclick="addCompetition()" class="btn btn-primary">ചേർക്കുക</button>
             </div>
             <ul id="competitionList" class="list-group mt-2"></ul>
@@ -70,7 +111,6 @@
         </div>
     </div>
 
-    <!-- Firebase SDKs & Main Script -->
     <script type="module" src="app.js"></script>
 </body>
 </html>
